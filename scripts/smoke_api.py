@@ -1,6 +1,3 @@
-"""Start a real HTTP server against an existing demo warehouse and check routes.
-Run after `python -m dre.cli demo`: python scripts/smoke_api.py
-"""
 import json
 import os
 import socket
