@@ -1,4 +1,4 @@
-# Dubai Real Estate Intelligence
+# Real Estate Intelligence
 
 A **data-engineering** platform on Dubai Land Department (DLD) open data: batch ingestion, a quality gate, a star-schema
 warehouse, a simulated real-time event pipeline, SQL data products and a dashboard, plus a small statistics API.
@@ -16,17 +16,6 @@ See [docs/architecture.md](docs/architecture.md) for the diagram and design deci
   deliberately injected defects). That is what the demo and tests use. **The demo numbers are not market data.**
 * **Events:** always simulated (there is no public marketplace event feed).
 
-## Quick start (no cloud, no downloads)
-```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt && pip install -e .
-python -m dre.cli demo                       # synthetic data -> full pipeline -> DuckDB
-python -m dre.cli health                     # pipeline + data-quality summary
-python -m dre.cli estimate "Dubai Marina, 2-bedroom, 1,200 sq ft"
-uvicorn dre.api.main:app --reload            # then open http://127.0.0.1:8000/docs
-python -m pytest -q
-```
-Minimal-dependency mode (only pandas + numpy): `DRE_WAREHOUSE=sqlite DRE_CLEAN_FORMAT=csv python -m dre.cli demo`.
 
 ## Using real DLD data
 1. Request access to the datasets on [Dubai Pulse](https://www.dubaipulse.gov.ae) (DLD Transactions, Ejari rental
@@ -38,21 +27,7 @@ Minimal-dependency mode (only pandas + numpy): `DRE_WAREHOUSE=sqlite DRE_CLEAN_F
    `schemas.py` lists candidate source names per column (e.g. `instance_date`, `area_name_en`, `property_type_en`).
    I matched them to the published DLD schema, but I could not download the full files here, so treat the profile
    output as the source of truth and edit `schemas.py` if a column differs.
-3. Ingest and transform:
-   ```bash
-   python -m dre.cli ingest --transactions Transactions.csv --rentals Rents.csv --projects Projects.csv
-   python -m dre.cli transform
-   ```
-Real data has junk (1 AED prices, near-zero areas). That is what the quality layer quarantines. If more than 20% of a
-file is rejected, the load aborts and tells you to inspect the mapping.
 
-## Running on AWS
-```bash
-make lambda-zip
-cd infra/terraform && terraform init && terraform plan -var-file=example.tfvars   # read the plan; it costs money
-```
-Then set `DRE_MODE=aws`, `DRE_WAREHOUSE=redshift`, the S3/Redshift variables in `.env`, and run the same CLI commands.
-`stream-sim --target kinesis` publishes to the real stream. Destroy with `terraform destroy` when done.
 
 ## Commands
 | Command | Purpose |
@@ -97,10 +72,3 @@ Matillion: no access, so see [docs/matillion_mapping.md](docs/matillion_mapping.
 | Redshift adapter, COPY loads, Terraform, Kinesis producer | **Not run against AWS.** Expect small fixes on first deploy |
 | FastAPI app | Live HTTP checks passed on 2026-10-05; CI runs `python scripts/smoke_api.py` after the demo |
 
-## Known limitations
-* Full refresh of dimensions and facts each run (fine at DLD scale; incremental loads would be a next step).
-* Rental yield is by area and property type only (no bedroom count in open Ejari data).
-* Area aliases cover 10 communities; extend `seeds/area_aliases.csv`.
-* Data is licensed under the Dubai Pulse open data licence; check its terms before republishing.
-
-See [docs/testing.md](docs/testing.md) for the validation results and remaining gaps.
