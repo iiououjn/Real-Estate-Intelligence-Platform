@@ -1,0 +1,8 @@
+# Metabase for dashboards. Connect it to Redshift (native driver) for production.
+services:
+  metabase:
+    image: metabase/metabase:latest
+    ports: ["3000:3000"]
+    volumes: ["metabase-data:/metabase-data"]
+    environment: { MB_DB_FILE: /metabase-data/metabase.db }
+volumes: { metabase-data: {} }
